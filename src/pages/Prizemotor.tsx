@@ -18,6 +18,7 @@ import applauseSound from '../assets/Applause  Sound Effect.mp3';
 import header from '../assets/header.png';
 import background from '../assets/Picture1.png';
 import { Link } from 'react-router-dom';
+
 interface User {
     id: number;
     name: string | null;
@@ -27,11 +28,12 @@ interface User {
 interface DoorPrize {
     id: number;
     name: string;
+    image: string;
 }
 
 const PrizeMotor: React.FC = () => {
     const [openModal, setOpenModal] = useState(false);
-    const [displayUsers, setDisplayUsers] = React.useState<User[]>([]);
+    const [displayUsers, setDisplayUsers] = useState<User[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [winners, setWinners] = useState<User[]>([]);
     const [numWinners, setNumWinners] = useState<number>(1);
@@ -71,12 +73,6 @@ const PrizeMotor: React.FC = () => {
         fetchDoorPrizes();
     }, []);
 
-
-
-
-
-
-
     const handleStart = () => {
         if (!isRunning) {
             const eligibleUsers = users.filter(user => !user.winner);
@@ -101,39 +97,57 @@ const PrizeMotor: React.FC = () => {
                     .sort(() => Math.random() - 0.5)
                     .slice(0, numWinners);
                 setDisplayUsers(shuffledUsers);
-            }, 90);
+            }, 10);
 
             setIntervalId(newIntervalId);
             setIsRunning(true);
+        }
+    };
 
-            setTimeout(async () => {
-                clearInterval(newIntervalId);
-                setDisplayUsers([]);
-                setIsRunning(false);
-                drumRef.current?.pause();
-                drumRef.current!.currentTime = 0;
-                applauseRef.current?.play();
+    const handleStop = async () => {
+        if (isRunning) {
+            clearInterval(intervalId!);
+            setIsRunning(false);
+            drumRef.current?.pause();
+            drumRef.current!.currentTime = 0;
+            applauseRef.current?.play();
 
-                const selectedWinners: User[] = [];
-                const usedIndices = new Set<number>();
+            const selectedWinners: User[] = [];
+            const usedIndices = new Set<number>();
+            const eligibleUsers = users.filter(user => !user.winner);
 
-                while (selectedWinners.length < numWinners) {
-                    const randomIndex = Math.floor(Math.random() * eligibleUsers.length);
-                    if (!usedIndices.has(randomIndex)) {
-                        selectedWinners.push(eligibleUsers[randomIndex]);
-                        usedIndices.add(randomIndex);
-                    }
+            // Fungsi untuk memilih dan menambahkan pemenang dengan delay 1 detik
+            const selectWinnersWithDelay = async () => {
+                for (let i = 0; i < numWinners; i++) {
+                    // await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay 1 detik
+                    let randomIndex;
+
+                    // Cari indeks unik yang belum dipilih sebelumnya
+                    do {
+                        randomIndex = Math.floor(Math.random() * eligibleUsers.length);
+                    } while (usedIndices.has(randomIndex));
+
+                    usedIndices.add(randomIndex);
+                    const winner = eligibleUsers[randomIndex];
+                    selectedWinners.push(winner);
+
+                    // Update UI saat pemenang dipilih
+                    setWinners([...selectedWinners]);
+
+                    console.log(`Winner selected: ${winner.name}`);
                 }
 
-                console.log('Selected Winners:', selectedWinners);
+                // Setelah semua pemenang dipilih, update data pengguna
+                await updateWinners(selectedWinners);
+                setShowClapping(true);
+            };
 
-                for (const winner of selectedWinners) {
+            const updateWinners = async (winners: User[]) => {
+                for (const winner of winners) {
                     try {
                         const response = await fetch(`http://localhost:5000/users/${winner.id}`, {
                             method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ ...winner, winner: true }),
                         });
 
@@ -148,21 +162,20 @@ const PrizeMotor: React.FC = () => {
                     }
                 }
 
+                // Update state pengguna setelah update API selesai
                 setUsers((prevUsers) =>
                     prevUsers.map((user) =>
-                        selectedWinners.some((winner) => winner.id === user.id)
+                        winners.some((winner) => winner.id === user.id)
                             ? { ...user, winner: true }
                             : user
                     )
                 );
+            };
 
-                setWinners(selectedWinners);
-                setShowClapping(true);
-            }, 8000);
+            // Jalankan fungsi pemilihan pemenang dengan delay
+            await selectWinnersWithDelay();
         }
     };
-
-
 
 
     const handleDrawWinnersClick = () => {
@@ -174,17 +187,18 @@ const PrizeMotor: React.FC = () => {
         setWinners([]);
         setSelectedDoorPrize(null);
         setNumWinners(1);
+        window.location.reload();
     };
 
     return (
         <Box sx={{ height: '100vh', position: 'relative' }}>
             <img src={header} width={'100%'} height={'100px'} style={{ objectFit: 'fill' }} />
-            <Link to='/login'>
+            {<Link to='/login'>
                 <button
                     style={{
                         position: 'absolute',
                         top: '40px',
-                        right: '10px', //
+                        right: '10px',
                         padding: '10px 20px',
                         backgroundColor: '#2d6532',
                         color: 'white',
@@ -196,22 +210,21 @@ const PrizeMotor: React.FC = () => {
                 >
                     Login
                 </button>
-            </Link>
-            <Container maxWidth="sm" sx={{ mt: 5 }}>
+            </Link> 
+            <Container maxWidth="sm">
                 <Box
                     sx={{
                         textAlign: 'center',
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        mt: 20,
+                        mt: 10,
                         flexDirection: 'column',
                     }}
                 >
-                    <Typography variant="h4" gutterBottom>
-                        Doorprize Hadiah Motor
+                    <Typography sx={{ fontFamily: 'Poppins' }} variant="h4" gutterBottom>
+                        Win Exclusive Prizes with Pertamina
                     </Typography>
-
                     <FormControl fullWidth sx={{ mt: 2 }}>
                         <InputLabel>Doorprize</InputLabel>
                         <Select
@@ -245,7 +258,6 @@ const PrizeMotor: React.FC = () => {
                         Undi Pemenang
                     </Button>
                 </Box>
-
                 <Modal open={openModal} onClose={handleModalClose} closeAfterTransition>
                     <Fade in={openModal}>
                         <Box
@@ -254,7 +266,6 @@ const PrizeMotor: React.FC = () => {
                                 width: '100%',
                                 height: '100vh',
                                 mx: 'auto',
-                                mt: 0,
                                 display: 'flex',
                                 flexDirection: 'column',
                                 alignItems: 'center',
@@ -262,6 +273,7 @@ const PrizeMotor: React.FC = () => {
                                 overflow: 'hidden',
                             }}
                         >
+                            {/* Background Image */}
                             <img
                                 src={background}
                                 alt="Background"
@@ -276,66 +288,133 @@ const PrizeMotor: React.FC = () => {
                                 }}
                             />
 
-                            <Box sx={{ mt: 25 }}>
-                                <Typography
-                                    variant="h4"
-                                    style={{ fontWeight: 'bold', color: '#285a2e' }}
-                                    gutterBottom
-                                >
-                                    HADIAH {doorPrizes.find((dp) => dp.id === selectedDoorPrize)?.name || 'Menunggu...'}
-                                </Typography>
-                            </Box>
 
-                            <Grid container spacing={2} sx={{ mt: 2, display: 'flex', justifyContent: 'center', gap: 2 }}>
-                                {Array.from({ length: numWinners }).map((_, index) => (
-                                    <Grid
-                                        item
-                                        key={index}
-                                        sx={{
-                                            width: '40%',
-                                            borderRadius: 30,
-                                            height: 50,
-                                            textAlign: 'center',
-                                            p: 1,
-                                            border: '5px solid #285a2e',
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            backgroundColor: 'white',
-                                        }}
+
+                            {/* Pesan Pemenang */}
+
+
+                            {/* Daftar Pemenang dalam 2 Kolom */}
+                            <Box sx={{ width: '100%', mt: 22, display: 'flex', justifyContent: 'center', flexDirection: 'column' }}>
+
+                                <Box 
+                                padding={2}
+                                    display="flex"
+                                    justifyContent="center"
+                                    alignItems="center"
+                                    gap={2}
+
+                                >
+                                    {doorPrizes.find((dp) => dp.id === selectedDoorPrize) ? (<img
+                                        src={doorPrizes.find((dp) => dp.id === selectedDoorPrize)?.image || '/placeholder.png'}
+                                        width={150}
+                                        height={150}
+                                        alt="gambar"
+                                        style={{ objectFit: 'contain', borderRadius: '8px' }}
+                                    />) : null}
+
+                                    
+                                    <Typography
+                                        variant="h4"
+                                        sx={{ fontWeight: 'bold', color: '#285a2e', textAlign: 'center' }}
+                                        gutterBottom
                                     >
-                                        <Typography sx={{ fontWeight: 'bold', fontSize: 18 }}>
-                                            {winners[index]?.name || displayUsers[index]?.name || 'Get Ready to Win!'}
-                                        </Typography>
-                                    </Grid>
-                                ))}
-                            </Grid>
+                                        {doorPrizes.find((dp) => dp.id === selectedDoorPrize)?.name || 'Pilih Doorprize'}
+                                    </Typography>
 
-                            <Box sx={{ mt: 3 }}>
-                                <Button
-                                    onClick={handleStart}
-                                    sx={{ mr: 2, color: 'white', fontWeight: 'bold', backgroundColor: '#316c36' }}
+
+                                </Box>
+
+                                <Box display={'flex'} justifyContent={'center'}>
+                                    {showClapping && (
+                                        <Typography variant="h5" sx={{ mt: 0, color: '#285a2e', fontWeight: 'bold' }}>
+                                            Selamat kepada pemenang!
+                                        </Typography>
+                                    )}
+                                </Box>
+                                <Grid container
+                                    display={"flex"} gap={1}
+                                    justifyContent="center" // Pastikan item ada di tengah
+                                // sx={{ minHeight: '100vh', }} // Pastikan container memenuhi layar
                                 >
-                                    Mulai
-                                </Button>
-                                <Button
-                                    onClick={handleModalClose}
-                                    sx={{ mr: 2, color: 'white', fontWeight: 'bold', backgroundColor: '#316c36' }}
-                                >
-                                    Tutup
-                                </Button>
+                                    {Array.from({ length: numWinners }).map((_, index) => (
+                                        <Grid
+                                            item
+                                            key={index}
+                                            xs={12} // Selalu 1 kolom di layar kecil
+                                            sm={numWinners === 1 ? 3 : 3}
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'center',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            <Box
+                                                sx={{
+                                                    p: 2,
+                                                    borderRadius: 3,
+                                                    border: '2px solid #285a2e',
+                                                    textAlign: 'center',
+                                                    backgroundColor: 'white',
+                                                    boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
+                                                    width: winners.length === 1 ? '50%' : '100%', // Lebar 50% jika 1 user
+                                                    height: 5, // Tinggi lebih besar jika 1 user
+
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    alignItems: 'center',
+
+                                                }}
+                                            >
+                                                <Typography sx={{ fontWeight: 'bold', fontSize: 18 }}>
+                                                    {winners[index]?.name || displayUsers[index]?.name || 'Get Ready to Win!'}
+                                                </Typography>
+                                            </Box>
+                                        </Grid>
+                                    ))}
+                                </Grid>
+                                <Grid container spacing={2} sx={{ justifyContent: 'center', mt: 0 }}>
+                                    <Grid item>
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleStart}
+                                            disabled={isRunning}
+                                            sx={{ bgcolor: '#2d6532', color: 'white' }}
+                                        >
+                                            Mulai
+                                        </Button>
+                                    </Grid>
+                                    <Grid item>
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleStop}
+                                            disabled={!isRunning}
+                                            sx={{ bgcolor: '#2d6532', color: 'white' }}
+                                        >
+                                            Stop
+                                        </Button>
+                                    </Grid>
+                                    <Grid item>
+                                        <Link to="/">
+                                            <Button
+                                                onClick={handleModalClose}
+                                                sx={{ bgcolor: '#dc3545', color: 'white' }}
+                                            >
+                                                Home
+                                            </Button>
+                                        </Link>
+                                    </Grid>
+                                </Grid>
                             </Box>
                         </Box>
                     </Fade>
                 </Modal>
 
-
             </Container>
 
-            <audio ref={drumRef} src={drumSound} />
-            <audio ref={applauseRef} src={applauseSound} />
+            <audio ref={drumRef} src={drumSound} preload="auto" />
+            <audio ref={applauseRef} src={applauseSound} preload="auto" />
         </Box >
     );
 };
 
-export default PrizeMotor;  
+export default PrizeMotor;

@@ -29,14 +29,16 @@ import {
 } from "@mui/icons-material";
 import MuiAlert, { AlertProps } from "@mui/material/Alert";
 
-interface User {
+interface DoorPrize {
     id: number;
     name: string;
+    image: string;
 }
 
 interface dataEdit {
     id: number;
     name: string;
+    image: string;
 }
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
@@ -44,7 +46,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props,
 });
 
 const Datadoorprize: React.FC = () => {
-    const [data, setData] = useState<User[]>([]);
+    const [data, setData] = useState<DoorPrize[]>([]);
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -54,9 +56,10 @@ const Datadoorprize: React.FC = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
     const [newName, setNewName] = useState("");
-    const [editData, setEditData] = useState<dataEdit>({ id: 0, name: "" });
+    const [editData, setEditData] = useState<dataEdit>({ id: 0, name: "", image: "" });
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
+    const [file, setFile] = useState<File | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -79,14 +82,25 @@ const Datadoorprize: React.FC = () => {
         fetchData();
     }, []);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setFile(e.target.files[0]);
+        }
+    };
+
     const handleAddUser = async () => {
+        const formData = new FormData();
+
+        // Tambahkan nama dan gambar ke dalam formData
+        formData.append("name", newName);
+        if (file) {
+            formData.append("image", file); // file berasal dari input gambar
+        }
+
         try {
             const response = await fetch("http://localhost:5000/doorprize", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ name: newName }),
+                body: formData, // Kirim sebagai FormData
             });
 
             if (!response.ok) {
@@ -105,6 +119,7 @@ const Datadoorprize: React.FC = () => {
         }
     };
 
+
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
         setSearch(event.target.value.toLowerCase());
     };
@@ -118,7 +133,7 @@ const Datadoorprize: React.FC = () => {
         setPage(newPage);
     };
 
-    const handleEdit = (participant: User) => {
+    const handleEdit = (participant: DoorPrize) => {
         setEditData(participant);
         setEditDialogOpen(true);
     };
@@ -191,6 +206,7 @@ const Datadoorprize: React.FC = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>No</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: "bold" }}>Image</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>Nama</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>Aksi</TableCell>
                         </TableRow>
@@ -208,6 +224,8 @@ const Datadoorprize: React.FC = () => {
                                 .map((participant, index) => (
                                     <TableRow key={participant.id}>
                                         <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
+                                        <TableCell align="center"><img src={participant.image} alt={participant.name} style={{ maxWidth: "100px", maxHeight: "100px" }} /></TableCell>
+
                                         <TableCell align="center">{participant.name}</TableCell>
                                         <TableCell align="center">
                                             <IconButton color="primary" onClick={() => handleEdit(participant)}>
@@ -268,6 +286,16 @@ const Datadoorprize: React.FC = () => {
                         variant="outlined"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
+                    />
+                    <TextField
+                        margin="dense"
+                        type="file"
+                        label="Gambar"
+                        fullWidth
+                        onChange={handleFileChange}
+                        variant="outlined"
+                        value={editData.image}
+                    // onChange={(e) => setEditData({ ...editData, image: e.target.value })}
                     />
                 </DialogContent>
                 <DialogActions>

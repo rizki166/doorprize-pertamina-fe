@@ -271,7 +271,7 @@ const PagesAdmin: React.FC = () => {
                         onChange={(e) =>
                             setEditData({ ...editData, name: e.target.value })
                         }
-                        disabled // Disable the name field
+                        
                     />
                     <TextField
                         margin="dense"
@@ -282,7 +282,7 @@ const PagesAdmin: React.FC = () => {
                         onChange={(e) =>
                             setEditData({ ...editData, email: e.target.value })
                         }
-                        disabled
+                       
                     />
                     <Typography>Hadiah </Typography>
                     <Select
