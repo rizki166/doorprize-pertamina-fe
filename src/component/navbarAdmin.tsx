@@ -28,6 +28,8 @@ const NavbarAdmin: FC = () => {
         { text: "Dashboard", icon: <FiHome />, path: "/admin" },
         { text: "Data Peserta", icon: <FiTable />, path: "/admin/data-peserta" },
         { text: "Data Doorprize", icon: <FiTable />, path: "/admin/data-doorprize" },
+        { text: "Data Winner", icon: <FiTable />, path: "/admin/data-winner" },
+   
     ];
 
     return (

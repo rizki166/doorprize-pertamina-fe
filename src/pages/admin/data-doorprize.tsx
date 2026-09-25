@@ -22,6 +22,10 @@ import {
     Snackbar,
 } from "@mui/material";
 import {
+    FormControlLabel,
+    Checkbox,
+} from "@mui/material";
+import {
     Edit as EditIcon,
     Save as SaveIcon,
     Close as CloseIcon,
@@ -29,17 +33,21 @@ import {
 } from "@mui/icons-material";
 import MuiAlert, { AlertProps } from "@mui/material/Alert";
 
+
 interface DoorPrize {
     id: number;
     name: string;
     image: string;
+    grandPrize: boolean;
 }
 
 interface dataEdit {
     id: number;
     name: string;
     image: string;
+    grandPrize: boolean;
 }
+
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
     return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
@@ -56,10 +64,15 @@ const Datadoorprize: React.FC = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
     const [newName, setNewName] = useState("");
-    const [editData, setEditData] = useState<dataEdit>({ id: 0, name: "", image: "" });
-    const [snackbarOpen, setSnackbarOpen] = useState(false);
+   const [editData, setEditData] = useState<dataEdit>({
+    id: 0,
+    name: "",
+    image: "",
+    grandPrize: false,
+}); const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState("");
     const [file, setFile] = useState<File | null>(null);
+const [grandPrize, setGrandPrize] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -88,36 +101,46 @@ const Datadoorprize: React.FC = () => {
         }
     };
 
-    const handleAddUser = async () => {
-        const formData = new FormData();
 
-        // Tambahkan nama dan gambar ke dalam formData
-        formData.append("name", newName);
-        if (file) {
-            formData.append("image", file); // file berasal dari input gambar
-        }
+const handleAddUser = async () => {
+    const formData = new FormData();
 
-        try {
-            const response = await fetch("http://localhost:5000/doorprize", {
+    formData.append("name", newName);
+    formData.append("grandPrize", String(grandPrize));
+
+    if (file) {
+        formData.append("image", file);
+    }
+
+    try {
+        const response = await fetch(
+            "http://localhost:5000/doorprize",
+            {
                 method: "POST",
-                body: formData, // Kirim sebagai FormData
-            });
-
-            if (!response.ok) {
-                throw new Error("Network response was not ok");
+                body: formData,
             }
+        );
 
-            const newUser = await response.json();
-            setData((prevData) => [...prevData, newUser]);
-            setAddDialogOpen(false);
-            setNewName("");
-            setSnackbarMessage("Peserta berhasil ditambahkan.");
-            setSnackbarOpen(true);
-            window.location.reload();
-        } catch (error) {
-            console.error("Error adding user:", error);
-        }
-    };
+        const newUser = await response.json();
+
+        setData((prev) => [...prev, newUser]);
+
+        setAddDialogOpen(false);
+        setNewName("");
+        setGrandPrize(false);
+        setFile(null);
+
+        setSnackbarMessage(
+            "Doorprize berhasil ditambahkan."
+        );
+
+        setSnackbarOpen(true);
+
+        window.location.reload();
+    } catch (error) {
+        console.log(error);
+    }
+};
 
 
     const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
@@ -224,8 +247,13 @@ const Datadoorprize: React.FC = () => {
                                 .map((participant, index) => (
                                     <TableRow key={participant.id}>
                                         <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
-                                        <TableCell align="center"><img src={participant.image} alt={participant.name} style={{ maxWidth: "100px", maxHeight: "100px" }} /></TableCell>
-
+<TableCell align="center">
+  <img
+    src={`http://localhost:5000/uploads/${participant.image}`}
+    alt={participant.name}
+    style={{ maxWidth: "100px", maxHeight: "100px" }}
+  />
+</TableCell>
                                         <TableCell align="center">{participant.name}</TableCell>
                                         <TableCell align="center">
                                             <IconButton color="primary" onClick={() => handleEdit(participant)}>
@@ -265,6 +293,19 @@ const Datadoorprize: React.FC = () => {
                         onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                     />
                 </DialogContent>
+                
+<FormControlLabel
+    control={
+        <Checkbox
+            checked={grandPrize}
+            onChange={(e) =>
+                setGrandPrize(e.target.checked)
+            }
+        />
+    }
+    label="Grand Prize"
+/>
+
                 <DialogActions>
                     <Button onClick={() => setEditDialogOpen(false)} startIcon={<CloseIcon />}>
                         Batal
@@ -297,6 +338,19 @@ const Datadoorprize: React.FC = () => {
                         value={editData.image}
                     // onChange={(e) => setEditData({ ...editData, image: e.target.value })}
                     />
+                    
+<FormControlLabel
+    control={
+        <Checkbox
+            checked={grandPrize}
+            onChange={(e) =>
+                setGrandPrize(e.target.checked)
+            }
+        />
+    }
+    label="Grand Prize"
+/>
+
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setAddDialogOpen(false)} startIcon={<CloseIcon />}>

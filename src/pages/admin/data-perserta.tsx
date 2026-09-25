@@ -31,6 +31,7 @@ interface User {
     name: string;
     email: string | null;
     winner: boolean;
+    type:string
 }
 
 const PagesAdmin: React.FC = () => {
@@ -52,6 +53,7 @@ const PagesAdmin: React.FC = () => {
         name: "",
         email: "",
         winner: false,
+        type:""
     });
 
     useEffect(() => {
@@ -122,7 +124,7 @@ const PagesAdmin: React.FC = () => {
 
     const handleSaveEdit = async () => {
         try {
-            const response = await fetch(`http://localhost:5000/users/${editData.id}`, {
+            const response = await fetch(`http://localhost:5001/users/${editData.id}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -147,7 +149,7 @@ const PagesAdmin: React.FC = () => {
 
     const handleDeleteUser = async (id: number) => {
         try {
-            const response = await fetch(`http://localhost:5000/users/${id}`, {
+            const response = await fetch(`http://localhost:5001/users/${id}`, {
                 method: "DELETE",
             });
 
@@ -207,6 +209,7 @@ const PagesAdmin: React.FC = () => {
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>No</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>Nama</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>Winner </TableCell>
+                            <TableCell align="center" sx={{ fontWeight: "bold" }}>Type</TableCell>
                             <TableCell align="center" sx={{ fontWeight: "bold" }}>Aksi</TableCell>
                         </TableRow>
                     </TableHead>
@@ -227,6 +230,7 @@ const PagesAdmin: React.FC = () => {
                                         </TableCell>
                                         <TableCell align="center">{participant.name}</TableCell>
                                         <TableCell align="center">{participant.winner ? "Ya" : "Tidak"}</TableCell>
+                                        <TableCell align="center">{participant.type}</TableCell>
                                         <TableCell align="center">
                                             <IconButton
                                                 color="primary"

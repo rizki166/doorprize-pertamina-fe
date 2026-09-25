@@ -1,5 +1,4 @@
 import { Box, Typography } from "@mui/material";
-import logoPertamina from "../assets/Logo Pertamina.jpg";
 
 const Dashboard = () => {
     return (
@@ -15,14 +14,7 @@ const Dashboard = () => {
             }}
         >
             <Box sx={{ textAlign: "center", mb: 15 }}>
-                <img
-                    src={logoPertamina}
-                    width={220}
-                    height={150}
-                    style={{ borderRadius: '10px' }}
-                    alt="Pertamina Logo"
 
-                />
                 <Typography
                     variant="h4"
                     component="h1"
@@ -33,7 +25,7 @@ const Dashboard = () => {
 
                     }}
                 >
-                    Welcome to the Admin Dashboard of Pertamina Doorprize
+                    Welcome to the Admin Dashboard of  Doorprize
                 </Typography>
                 <Typography
                     variant="body1"

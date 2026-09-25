@@ -13,7 +13,7 @@ import {
     MenuItem,
     TextField,
 } from '@mui/material';
-import background from '../assets/Desain tanpa judul (4).png';
+import background from '../assets/bg new.png';
 import { Link } from 'react-router-dom';
 
 interface User {
@@ -28,7 +28,7 @@ interface DoorPrize {
     image: string;
 }
 
-const PrizeMotor: React.FC = () => {
+const GrandPrize: React.FC = () => {
     const [openModal, setOpenModal] = useState(false);
     const [displayUsers, setDisplayUsers] = useState<User[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -40,30 +40,18 @@ const PrizeMotor: React.FC = () => {
     const [isRunning, setIsRunning] = useState(false);
     const [showClapping, setShowClapping] = useState(false);
 const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMBER");
-    // const drumRef = useRef<HTMLAudioElement | null>(null);
-    // const applauseRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         const fetchUsers = async () => {
-            try {
-                const response = await fetch('http://localhost:5000/users');
-                const result = await response.json();
-                if (result.status) setUsers(result.data);
-                else console.error('Error fetching users:', result.message);
-            } catch (error) {
-                console.error('Error fetching users:', error);
-            }
+            const response = await fetch('http://localhost:5000/users');
+            const result = await response.json();
+            if (result.status) setUsers(result.data);
         };
 
         const fetchDoorPrizes = async () => {
-            try {
-                const response = await fetch('http://localhost:5000/doorprize');
-                const result = await response.json();
-                if (result.status) setDoorPrizes(result.data);
-                else console.error('Error fetching door prizes:', result.message);
-            } catch (error) {
-                console.error('Error fetching door prizes:', error);
-            }
+            const response = await fetch('http://localhost:5000/doorprize');
+            const result = await response.json();
+            if (result.status) setDoorPrizes(result.data);
         };
 
         fetchUsers();
@@ -71,133 +59,81 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
     }, []);
 
     const handleStart = () => {
-        if (!isRunning) {
-         const eligibleUsers = users.filter(
-    (user) =>
-        !user.winner &&
-        user.type === participantType
-);
-            if (numWinners > eligibleUsers.length) {
-                alert('Jumlah pemenang melebihi jumlah peserta yang memenuhi syarat!');
-                return;
-            }
+        if (isRunning) return;
 
-            if (selectedDoorPrize === null) {
-                alert('Silakan pilih doorprize!');
-                return;
-            }
+        const eligibleUsers = users.filter(
+            (user) =>
+                user.type === participantType
+        );
 
-            setWinners([]); // Reset winners
-            setDisplayUsers([]);
-            setShowClapping(false);
-            // drumRef.current?.play();
-
-            const newIntervalId = setInterval(() => {
-                const shuffledUsers = eligibleUsers
-                    .sort(() => Math.random() - 0.5)
-                    .slice(0, numWinners);
-                setDisplayUsers(shuffledUsers);
-            }, 10);
-
-            setIntervalId(newIntervalId);
-            setIsRunning(true);
+        if (numWinners > eligibleUsers.length) {
+            alert('Jumlah pemenang melebihi jumlah peserta!');
+            return;
         }
+
+        if (selectedDoorPrize === null) {
+            alert('Silakan pilih doorprize!');
+            return;
+        }
+
+        setWinners([]);
+        setDisplayUsers([]);
+        setShowClapping(false);
+
+        const newIntervalId = setInterval(() => {
+            const shuffled = eligibleUsers
+                .sort(() => Math.random() - 0.5)
+                .slice(0, numWinners);
+
+            setDisplayUsers(shuffled);
+        }, 50);
+
+        setIntervalId(newIntervalId);
+        setIsRunning(true);
     };
 
     const handleStop = async () => {
-        if (isRunning) {
-            clearInterval(intervalId!);
-            setIsRunning(false);
-            // drumRef.current?.pause();
-            // drumRef.current!.currentTime = 0;
-            // applauseRef.current?.play();
+        if (!isRunning) return;
 
-            const selectedWinners: User[] = [];
-            const usedIndices = new Set<number>();
-        const eligibleUsers = users.filter(
-    (user) =>
-        !user.winner &&
-        user.type === participantType
-);
-            // Fungsi untuk memilih dan menambahkan pemenang dengan delay 1 detik
-            const selectWinnersWithDelay = async () => {
-                for (let i = 0; i < numWinners; i++) {
-                    // await new Promise((resolve) => setTimeout(resolve, 2000)); // Delay 1 detik
-                    let randomIndex;
+        clearInterval(intervalId!);
+        setIsRunning(false);
 
-                    // Cari indeks unik yang belum dipilih sebelumnya
-                    do {
-                        randomIndex = Math.floor(Math.random() * eligibleUsers.length);
-                    } while (usedIndices.has(randomIndex));
+        const eligibleUsers = users.filter((user) => user.type === participantType);
+        const selectedWinners: User[] = [];
+        const used = new Set<number>();
 
-                    usedIndices.add(randomIndex);
-                    const winner = eligibleUsers[randomIndex];
-                    selectedWinners.push(winner);
+        for (let i = 0; i < numWinners; i++) {
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * eligibleUsers.length);
+            } while (used.has(randomIndex));
 
-                    // Update UI saat pemenang dipilih
-                    setWinners([...selectedWinners]);
-
-                    console.log(`Winner selected: ${winner.name}`);
-                }
-
-                // Setelah semua pemenang dipilih, update data pengguna
-                await updateWinners(selectedWinners);
-                setShowClapping(true);
-            };
-
-
-            const updateWinners = async (winners: User[]) => {
-                for (const winner of winners) {
-                    try {
-                        await fetch(`http://localhost:5000/users/${winner.id}`, {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                ...winner,
-                                winner: true,
-                            }),
-                        });
-
-                        await fetch("http://localhost:5000/winner", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify({
-                                userId: winner.id,
-                                doorprizeId: selectedDoorPrize,
-                            }),
-                        });
-
-                        console.log(`Winner saved : ${winner.name}`);
-                    } catch (error) {
-                        console.log(error);
-                    }
-                }
-
-                setUsers((prevUsers) =>
-                    prevUsers.map((user) =>
-                        winners.some((item) => item.id === user.id)
-                            ? {
-                                ...user,
-                                winner: true,
-                            }
-                            : user
-                    )
-                );
-            };
-
-            // Jalankan fungsi pemilihan pemenang dengan delay
-            await selectWinnersWithDelay();
+            used.add(randomIndex);
+            selectedWinners.push(eligibleUsers[randomIndex]);
+            setWinners([...selectedWinners]);
         }
+
+        for (const winner of selectedWinners) {
+            await fetch(`http://localhost:5000/users/${winner.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...winner, winner: true }),
+            });
+
+            await fetch("http://localhost:5000/winner", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: winner.id,
+                    doorprizeId: selectedDoorPrize,
+                }),
+            });
+        }
+
+        setShowClapping(true);
     };
 
-
-    const handleDrawWinnersClick = () => {
-        setOpenModal(true);
-    };
+    const handleDrawWinnersClick = () => setOpenModal(true);
 
     const handleModalClose = () => {
         setOpenModal(false);
@@ -208,7 +144,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
     };
 
     return (
-       <Box
+        <Box
             sx={{
                 height: '100vh',
                 position: 'relative',
@@ -286,6 +222,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
                             }}
                         />
                     </Box>
+
                     <FormControl
                         fullWidth
                         sx={{
@@ -330,36 +267,35 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
                             ))}
                         </Select>
                     </FormControl>
+                    <FormControl
+                        fullWidth
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                color: '#F5E6C8',
+                                '& fieldset': { borderColor: 'rgba(212,175,55,0.4)' },
+                                '&:hover fieldset': { borderColor: '#D4AF37' },
+                                '&.Mui-focused fieldset': { borderColor: '#FFD700' },
+                                background: 'rgba(255,255,255,0.04)',
+                            },
+                            '& .MuiInputLabel-root': {
+                                color: 'rgba(212,175,55,0.7)',
+                            },
+                        }}
+                    >
+                        <InputLabel>Peserta Undian</InputLabel>
+                    
+                        <Select
+                            value={participantType}
+                            label="Peserta Undian"
+                            onChange={(e) =>
+                                setParticipantType(e.target.value as "MEMBER" | "MITRA")
+                            }
+                        >
+                            <MenuItem value="MEMBER">Member</MenuItem>
+                            <MenuItem value="MITRA">Mitra</MenuItem>
+                        </Select>
+                    </FormControl>
 
-
-<FormControl
-    fullWidth
-    sx={{
-        '& .MuiOutlinedInput-root': {
-            color: '#F5E6C8',
-            '& fieldset': { borderColor: 'rgba(212,175,55,0.4)' },
-            '&:hover fieldset': { borderColor: '#D4AF37' },
-            '&.Mui-focused fieldset': { borderColor: '#FFD700' },
-            background: 'rgba(255,255,255,0.04)',
-        },
-        '& .MuiInputLabel-root': {
-            color: 'rgba(212,175,55,0.7)',
-        },
-    }}
->
-    <InputLabel>Peserta Undian</InputLabel>
-
-    <Select
-        value={participantType}
-        label="Peserta Undian"
-        onChange={(e) =>
-            setParticipantType(e.target.value as "MEMBER" | "MITRA")
-        }
-    >
-        <MenuItem value="MEMBER">Member</MenuItem>
-        <MenuItem value="MITRA">Mitra</MenuItem>
-    </Select>
-</FormControl>
                     <TextField
                         type="number"
                         label="Jumlah Pemenang"
@@ -412,7 +348,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
                 </Box>
             </Container>
 
-                <Modal open={openModal} onClose={handleModalClose} closeAfterTransition>
+              <Modal open={openModal} onClose={handleModalClose} closeAfterTransition>
                     <Fade in={openModal}>
                         <Box
                             sx={{
@@ -497,7 +433,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
         src={`http://localhost:5000/uploads/${
           doorPrizes.find((dp) => dp.id === Number(selectedDoorPrize))?.image
         }`}
-        width={"100%"}
+        width={250}
         height={230}
         alt="Grand Prize"
         style={{
@@ -513,7 +449,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
     variant="h4"
     sx={{
       fontWeight: "bold",
-      color: "white",
+      color: "#213985",
       textAlign: "center",
       position: "relative",
       zIndex: 1,
@@ -523,23 +459,23 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
       "Pilih Doorprize"}
   </Typography>
 
-  {/* <Typography
-    component="span"
-    sx={{
-      px: 2,
-      py: 0.5,
-      borderRadius: 2,
-      backgroundColor:
-        participantType === "MITRA" ? "#1976d2" : "#2e7d32",
-      color: "white",
-      fontSize: 16,
-      fontWeight: "medium",
-      position: "relative",
-      zIndex: 1,
-    }}
-  >
-    {participantType === "MITRA" ? "PARTNER" : participantType}
-  </Typography> */}
+  <Typography
+  component="span"
+  sx={{
+    px: 2,
+    py: 0.5,
+    borderRadius: 2,
+    backgroundColor:
+      participantType === "MITRA" ? "#1976d2" : "#2e7d32",
+    color: "white",
+    fontSize: 16,
+    fontWeight: "medium",
+    position: "relative",
+    zIndex: 1,
+  }}
+>
+  {participantType === "MITRA" ? "PARTNER" : participantType}
+</Typography>
   </Box>
 </Box>
                                 <Box display={'flex'} justifyContent={'center'}>
@@ -579,12 +515,12 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
                                                     p: 2,
                                                     borderRadius: 3,
                                                     textAlign: 'center',
-                                                    // backgroundColor: "rgba(255,255,255,0.75)",
+                                                    backgroundColor: "rgba(255,255,255,0.75)",
                                                     backdropFilter: "blur(6px)",
-                                                    border: "2px solid #B7C797",
+                                                    border: "2px solid #8B6B2E",
                                                     boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-                                                    width: winners.length === 1 ? '100%' : '100%', // Lebar 50% jika 1 user
-                                                    height: 5, // Tinggi lebih besar jika 1 user
+                                                                                                      width: winners.length === 1 ? '100%' : '100%', // Lebar 50% jika 1 user
+  height: 5, // Tinggi lebih besar jika 1 user
 
                                                     display: 'flex',
                                                     justifyContent: 'center',
@@ -592,7 +528,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
 
                                                 }}
                                             >
-                                                <Typography sx={{ fontWeight: 'bold', fontSize: 22, color: '#f1f1f1' }}>
+                                                <Typography sx={{ fontWeight: 'bold', fontSize: 22, color: '#5C4033' }}>
     {(winners[index]?.name || displayUsers[index]?.name || 'Get Ready to Win!').toUpperCase()}
 </Typography>
                                             </Box>
@@ -605,7 +541,7 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
                                             variant="contained"
                                             onClick={handleStart}
                                             disabled={isRunning}
-                                            sx={{ bgcolor: '#FFFFFF', color: '#045CA4' }}
+                                            sx={{ bgcolor: '#223985', color: 'white' }}
                                         >
                                             Start
                                         </Button>
@@ -641,5 +577,4 @@ const [participantType, setParticipantType] = useState<"MEMBER" | "MITRA">("MEMB
         </Box>
     );
 };
-
-export default PrizeMotor;
+export default GrandPrize
